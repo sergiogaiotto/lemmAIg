@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tutorial - lemmAIngs</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        bg: { DEFAULT: '#0d1117', card: '#161b22', hover: '#1c2128' },
+                        accent: '#ff6347',
+                        muted: '#9595ad',
+                        green: { 1: '#0e4429', 2: '#006d32', 3: '#26a641', 4: '#39d353' },
+                        border: '#30363d',
+                        yellow: { dim: '#e3b341' },
+                    },
+                    fontFamily: {
+                        mono: ['"Courier New"', 'Courier', 'monospace'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style>
+        body { background: #0d1117; color: #c9d1d9; }
+        .code-block {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            padding: 1rem 1.25rem;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85rem;
+            overflow-x: auto;
+            position: relative;
+        }
+        .code-block .lang-tag {
+            position: absolute; top: 0; right: 0;
+            background: #30363d; color: #9595ad;
+            font-size: 0.65rem; padding: 2px 8px;
+            border-radius: 0 8px 0 6px;
+        }
+        .step-number {
+            width: 36px; height: 36px; min-width: 36px;
+            display: flex; align-items: center; justify-content: center;
+            border-radius: 50%; font-weight: 700; font-size: 0.85rem;
+        }
+        .toc-link { transition: all 0.15s; }
+        .toc-link:hover { color: #ff6347; padding-left: 4px; }
+        .callout {
+            border-left: 3px solid; padding: 0.75rem 1rem;
+            border-radius: 0 8px 8px 0; font-size: 0.85rem;
+        }
+        .callout-warn { border-color: #e3b341; background: rgba(227,179,65,0.06); }
+        .callout-info { border-color: #58a6ff; background: rgba(88,166,255,0.06); }
+        .callout-ok { border-color: #39d353; background: rgba(57,211,83,0.06); }
+        .file-tree { font-family: 'Courier New', monospace; font-size: 0.8rem; line-height: 1.7; }
+        .file-tree .dir { color: #58a6ff; }
+        .file-tree .file { color: #c9d1d9; }
+        .file-tree .desc { color: #9595ad; }
+        .endpoint-row:hover { background: #1c2128; }
+        .screenshot-frame {
+            border: 1px solid #30363d; border-radius: 12px;
+            overflow: hidden; background: #161b22;
+        }
+        .screenshot-bar {
+            display: flex; align-items: center; gap: 6px;
+            padding: 8px 12px; border-bottom: 1px solid #30363d;
+        }
+        .screenshot-dot { width: 10px; height: 10px; border-radius: 50%; }
+        @media (max-width: 768px) {
+            .sidebar-toc { display: none; }
+        }
+    </style>
+</head>
+<body class="min-h-screen font-mono">
+
+    <!-- Header -->
+    <header class="border-b border-border px-4 py-3 md:px-8 sticky top-0 bg-bg z-40">
+        <div class="max-w-7xl mx-auto flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <a href="/" class="text-2xl font-black tracking-tight" style="font-weight: 790;">
+                    <span class="text-muted">lemm</span><span class="text-accent">AI</span><span class="text-muted">ngs</span>
+                </a>
+                <span class="text-xs text-muted bg-bg-card px-2 py-0.5 rounded border border-border">
+                    tutorial
+                </span>
+            </div>
+            <nav class="flex items-center gap-4 text-sm text-muted">
+                <a href="/" class="hover:text-accent transition">App</a>
+                <a href="https://falagaiotto.com.br/" target="_blank" class="hover:text-accent transition hidden sm:inline">falagaiotto</a>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Layout -->
+    <div class="max-w-7xl mx-auto px-4 md:px-8 py-8 flex gap-8">
+
+        <!-- Sidebar TOC -->
+        <aside class="sidebar-toc w-56 flex-shrink-0 sticky top-16 self-start max-h-[calc(100vh-5rem)] overflow-y-auto">
+            <p class="text-xs font-bold text-accent uppercase tracking-wider mb-3">Sumario</p>
+            <nav class="space-y-1 text-sm">
+                <a href="#sobre" class="toc-link block text-muted">Sobre o Projeto</a>
+                <a href="#pre-requisitos" class="toc-link block text-muted">Pre-requisitos</a>
+                <a href="#instalacao" class="toc-link block text-muted">Instalacao</a>
+                <a href="#configuracao" class="toc-link block text-muted">Configuracao (.env)</a>
+                <a href="#executar" class="toc-link block text-muted">Executar</a>
+                <a href="#estrutura" class="toc-link block text-muted">Estrutura do Projeto</a>
+                <hr class="border-border my-2">
+                <p class="text-xs font-bold text-muted uppercase tracking-wider mb-1">Uso</p>
+                <a href="#fase1" class="toc-link block text-muted pl-2">1. Especificar</a>
+                <a href="#fase2" class="toc-link block text-muted pl-2">2. Design Pattern</a>
+                <a href="#fase3" class="toc-link block text-muted pl-2">3. Tarefas</a>
+                <a href="#fase4" class="toc-link block text-muted pl-2">4. Implementar</a>
+                <a href="#fase5" class="toc-link block text-muted pl-2">5. Download</a>
+                <hr class="border-border my-2">
+                <a href="#dp-catalog" class="toc-link block text-muted">Catalogo de DPs</a>
+                <a href="#editar" class="toc-link block text-muted">Editar Artefatos</a>
+                <a href="#api" class="toc-link block text-muted">Referencia da API</a>
+                <a href="#troubleshooting" class="toc-link block text-muted">Troubleshooting</a>
+            </nav>
+        </aside>
+
+        <!-- Content -->
+        <main class="flex-1 min-w-0 space-y-12">
+
+            <!-- ============================================================ -->
+            <!-- HERO -->
+            <!-- ============================================================ -->
+            <section class="text-center py-8">
+                <p class="text-4xl mb-2" style="font-weight:790">
+                    <span class="text-muted">lemm</span><span class="text-accent">AI</span><span class="text-muted">ngs</span>
+                </p>
+                <p class="text-lg text-muted mb-1">Spec-Driven Development com Agentes de IA</p>
+                <p class="text-xs text-muted opacity-60">Tutorial completo de instalacao e uso</p>
+                <div class="flex justify-center gap-3 mt-4">
+                    <a href="#instalacao" class="bg-accent hover:bg-red-500 text-white px-5 py-2 rounded-lg text-sm font-semibold transition">Comecar Instalacao</a>
+                    <a href="#fase1" class="bg-bg-card border border-border hover:border-accent text-muted hover:text-white px-5 py-2 rounded-lg text-sm font-semibold transition">Ir para Uso</a>
+                </div>
+            </section>
+
+            <!-- ============================================================ -->
+            <!-- SOBRE -->
+            <!-- ============================================================ -->
+            <section id="sobre">
+                <h2 class="text-xl font-bold text-accent mb-4 flex items-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    Sobre o Projeto
+                </h2>
+                <p class="text-sm leading-relaxed mb-3">
+                    <strong>lemmAIngs</strong> e uma aplicacao de <strong>spec-driven development</strong> onde
+                    especificacoes se tornam artefatos executaveis que geram implementacoes funcionais.
+                    Em vez de "vibe coding", voce descreve <em>o que</em> quer construir e agentes de IA
+                    geram a especificacao, o design pattern, as tarefas e o codigo.
+                </p>
+                <div class="callout callout-info mb-4">
+                    <strong>Inspirado em:</strong>
+                    <a href="https://github.com/github/spec-kit" target="_blank" class="text-accent hover:underline">GitHub spec-kit</a> +
+                    <a href="https://github.com/langchain-ai/deepagents" target="_blank" class="text-accent hover:underline">LangChain deepagents</a>
+                </div>
+
+                <h3 class="text-sm font-bold text-white mb-2">Fluxo em 5 fases:</h3>
+                <div class="grid grid-cols-1 sm:grid-cols-5 gap-2 text-center text-xs">
+                    <div class="bg-bg-card border border-border rounded-lg p-3">
+                        <div class="text-accent font-bold mb-1">1</div>
+                        <div class="text-muted">Especificar</div>
+                        <div class="text-[10px] text-muted opacity-60 mt-1">ESPEC.md</div>
+                    </div>
+                    <div class="bg-bg-card border border-border rounded-lg p-3">
+                        <div class="text-accent font-bold mb-1">2</div>
+                        <div class="text-muted">Design Pattern</div>
+                        <div class="text-[10px] text-muted opacity-60 mt-1">DP.md</div>
+                    </div>
+                    <div class="bg-bg-card border border-border rounded-lg p-3">
+                        <div class="text-accent font-bold mb-1">3</div>
+                        <div class="text-muted">Tarefas</div>
+                        <div class="text-[10px] text-muted opacity-60 mt-1">TASKS.md</div>
+                    </div>
+                    <div class="bg-bg-card border border-border rounded-lg p-3">
+                        <div class="text-accent font-bold mb-1">4</div>
+                        <div class="text-muted">Implementar</div>
+                        <div class="text-[10px] text-muted opacity-60 mt-1">Codigo</div>
+                    </div>
+                    <div class="bg-bg-card border border-green-3 rounded-lg p-3">
+                        <div class="text-green-4 font-bold mb-1">5</div>
+                        <div class="text-muted">Download</div>
+                        <div class="text-[10px] text-muted opacity-60 mt-1">.zip</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ============================================================ -->
+            <!-- PRE-REQUISITOS -->
+            <!-- ============================================================ -->
+            <section id="pre-requisitos">
+                <h2 class="text-xl font-bold text-accent mb-4 flex items-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    Pre-requisitos
+                </h2>
+                <div class="space-y-3">
+                    <div class="flex items-start gap-3 bg-bg-card border border-border rounded-lg p-4">
+                        <div class="step-number bg-accent text-white">1</div>
+                        <div>
+                            <p class="text-sm font-bold">Python 3.11+</p>
+                            <p class="text-xs text-muted">Verifique com: <code class="bg-bg px-1.5 py-0.5 rounded text-accent">python --version</code></p>
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-3 bg-bg-card border border-border rounded-lg p-4">
+                        <div class="step-number bg-accent text-white">2</div>
+                        <div>
+                            <p class="text-sm font-bold">pip (gerenciador de pacotes)</p>
+                            <p class="text-xs text-muted">Verifique com: <code class="bg-bg px-1.5 py-0.5 rounded text-accent">pip --version</code></p>
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-3 bg-bg-card border border-border rounded-lg p-4">
+                        <div class="step-number bg-accent text-white">3</div>
+                        <div>
+                            <p class="text-sm font-bold">Chave de API da OpenAI</p>
+                            <p class="text-xs text-muted">Crie em <a href="https://platform.openai.com/api-keys" target="_blank" class="text-accent hover:underline">platform.openai.com/api-keys</a></p>
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-3 bg-bg-card border border-border rounded-lg p-4">
+                        <div class="step-number bg-accent text-white">4</div>
+                        <div>
+                            <p class="text-sm font-bold">Git (opcional, recomendado)</p>
+                            <p class="text-xs text-muted">Para clonar o repositorio</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ============================================================ -->
+            <!-- INSTALACAO -->
+            <!-- ============================================================ -->
+            <section id="instalacao">
+                <h2 class="text-xl font-bold text-accent mb-4 flex items-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                    Instalacao
+                </h2>
+
+                <h3 class="text-sm font-bold text-white mb-2 mt-4">Passo 1 &mdash; Clonar ou copiar o projeto</h3>
+                <div class="code-block mb-4">
+                    <span class="lang-tag">bash</span>
+                    <span class="text-muted"># clonar o repositorio</span><br>
+                    git clone &lt;url-do-repositorio&gt; lemmAIngs<br>
+                    cd lemmAIngs
+                </div>
+
+                <h3 class="text-sm font-bold text-white mb-2">Passo 2 &mdash; Criar ambiente virtual (recomendado)</h3>
+                <div class="code-block mb-4">
+                    <span class="lang-tag">bash</span>
+                    <span class="text-muted"># Windows</span><br>
+                    python -m venv .venv<br>
+                    .venv\Scripts\activate<br><br>
+                    <span class="text-muted"># Linux / macOS</span><br>
+                    python3 -m venv .venv<br>
+                    source .venv/bin/activate
+                </div>
+
+                <h3 class="text-sm font-bold text-white mb-2">Passo 3 &mdash; Instalar dependencias</h3>
+                <div class="code-block mb-4">
+                    <span class="lang-tag">bash</span>
+                    pip install -r requirements.txt
+                </div>
+
+                <div class="callout callout-warn">
+                    <strong>Nota:</strong> O <code>requirements.txt</code> inclui o pacote <code>deepagents</code> que sera instalado diretamente do repositorio GitHub. Certifique-se de ter conexao com a internet.
+                </div>
+            </section>
+
+            <!-- ============================================================ -->
+            <!-- CONFIGURACAO -->
+            <!-- ============================================================ -->
+            <section id="configuracao">
+                <h2 class="text-xl font-bold text-accent mb-4 flex items-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                    Configuracao (.env)
+                </h2>
+                <p class="text-sm text-muted mb-3">Edite o arquivo <code class="bg-bg-card px-1.5 py-0.5 rounded text-accent">.env</code> na raiz do projeto:</p>
+
+                <div class="code-block mb-4">
+                    <span class="lang-tag">.env</span>
+                    <span class="text-green-4">OPENAI_API_KEY</span>=sk-sua-chave-aqui<br>
+                    <span class="text-green-4">MODEL_NAME</span>=gpt-4.1<br>
+                    <span class="text-green-4">APP_NAME</span>=lemmAIngs<br>
+                    <span class="text-green-4">APP_HOST</span>=0.0.0.0<br>
+                    <span class="text-green-4">APP_PORT</span>=8000
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm border border-border rounded-lg overflow-hidden">
+                        <thead>
+                            <tr class="bg-bg-card">
+                                <th class="px-4 py-2 text-left border-b border-border text-accent">Variavel</th>
+                                <th class="px-4 py-2 text-left border-b border-border text-accent">Obrigatorio</th>
+                                <th class="px-4 py-2 text-left border-b border-border text-accent">Descricao</th>
+                            </tr>
+                        </thead>
+                        <tbody class="text-xs">
+                            <tr class="endpoint-row"><td class="px-4 py-2 border-b border-border font-mono text-green-4">OPENAI_API_KEY</td><td class="px-4 py-2 border-b border-border text-accent">Sim</td><td class="px-4 py-2 border-b border-border text-muted">Sua chave da API OpenAI</td></tr>
+                            <tr class="endpoint-row"><td class="px-4 py-2 border-b border-border font-mono text-green-4">MODEL_NAME</td><td class="px-4 py-2 border-b border-border text-muted">Nao</td><td class="px-4 py-2 border-b border-border text-muted">Modelo a usar (default: gpt-4o)</td></tr>
+                            <tr class="endpoint-row"><td class="px-4 py-2 border-b border-border font-mono text-green-4">APP_NAME</td><td class="px-4 py-2 border-b border-border text-muted">Nao</td><td class="px-4 py-2 border-b border-border text-muted">Nome exibido na app</td></tr>
+                            <tr class="endpoint-row"><td class="px-4 py-2 border-b border-border font-mono text-green-4">APP_HOST</td><td class="px-4 py-2 border-b border-border text-muted">Nao</td><td class="px-4 py-2 border-b border-border text-muted">Host do servidor (default: 0.0.0.0)</td></tr>
+                            <tr class="endpoint-row"><td class="px-4 py-2 font-mono text-green-4">APP_PORT</td><td class="px-4 py-2 text-muted">Nao</td><td class="px-4 py-2 text-muted">Porta do servidor (default: 8000)</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="callout callout-warn mt-4">
+                    <strong>Seguranca:</strong> Nunca commite o arquivo <code>.env</code> no repositorio. Ele ja esta incluido no <code>.gitignore</code>.
+                </div>
+            </section>
+
+            <!-- ============================================================ -->
+            <!-- EXECUTAR -->
+            <!-- ============================================================ -->
+            <section id="executar">
+                <h2 class="text-xl font-bold text-accent mb-4 flex items-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    Executar
+                </h2>
+                <div class="code-block mb-4">
+                    <span class="lang-tag">bash</span>
+                    python run.py
+                </div>
+                <p class="text-sm text-muted mb-3">Voce vera a saida:</p>
+                <div class="code-block mb-4">
+                    <span class="lang-tag">output</span>
+                    <span class="text-green-4">INFO</span>:&nbsp;&nbsp;Uvicorn running on <span class="text-accent">http://0.0.0.0:8000</span><br>
+                    <span class="text-green-4">INFO</span>:&nbsp;&nbsp;Application startup complete.
+                </div>
+                <div class="callout callout-ok">
+                    <strong>Pronto!</strong> Acesse <a href="http://localhost:8000" target="_blank" class="text-accent hover:underline font-bold">http://localhost:8000</a> no navegador.
+                    <br>Este tutorial esta em <a href="http://localhost:8000/tutorial" class="text-accent hover:underline font-bold">http://localhost:8000/tutorial</a>.
+                </div>
+            </section>
+
+            <!-- ============================================================ -->
+            <!-- ESTRUTURA -->
+            <!-- ============================================================ -->
+            <section id="estrutura">
+                <h2 class="text-xl font-bold text-accent mb-4 flex items-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
+                    Estrutura do Projeto
+                </h2>
+                <div class="code-block file-tree">
+                    <span class="lang-tag">tree</span>
+                    <span class="dir">lemmAIngs/</span><br>
+                    ├── <span class="dir">app/</span><br>
+                    │&nbsp;&nbsp; ├── <span class="dir">agents/</span><br>
+                    │&nbsp;&nbsp; │&nbsp;&nbsp; └── <span class="file">spec_agent.py</span>&nbsp;&nbsp;&nbsp;<span class="desc"># Agente LangGraph (4 nos)</span><br>
+                    │&nbsp;&nbsp; ├── <span class="dir">api/</span><br>
+                    │&nbsp;&nbsp; │&nbsp;&nbsp; └── <span class="file">routes.py</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="desc"># Endpoints FastAPI</span><br>
+                    │&nbsp;&nbsp; ├── <span class="dir">core/</span><br>
+                    │&nbsp;&nbsp; │&nbsp;&nbsp; ├── <span class="file">config.py</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="desc"># Variaveis de ambiente</span><br>
+                    │&nbsp;&nbsp; │&nbsp;&nbsp; └── <span class="file">prompts.py</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="desc"># System prompts por fase</span><br>
+                    │&nbsp;&nbsp; ├── <span class="dir">models/</span><br>
+                    │&nbsp;&nbsp; │&nbsp;&nbsp; └── <span class="file">schemas.py</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="desc"># Schemas Pydantic</span><br>
+                    │&nbsp;&nbsp; ├── <span class="dir">services/</span><br>
+                    │&nbsp;&nbsp; │&nbsp;&nbsp; ├── <span class="file">project_service.py</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="desc"># CRUD artefatos</span><br>
+                    │&nbsp;&nbsp; │&nbsp;&nbsp; ├── <span class="file">dp_catalog_service.py</span>&nbsp;&nbsp;<span class="desc"># Upload PDF/DOCX</span><br>
+                    │&nbsp;&nbsp; │&nbsp;&nbsp; └── <span class="file">zip_service.py</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="desc"># Gerar .zip</span><br>
+                    │&nbsp;&nbsp; ├── <span class="dir">templates/</span><br>
+                    │&nbsp;&nbsp; │&nbsp;&nbsp; ├── <span class="file">default.html</span>&nbsp;&nbsp;&nbsp;<span class="desc"># App principal</span><br>
+                    │&nbsp;&nbsp; │&nbsp;&nbsp; └── <span class="file">tutorial.html</span>&nbsp;&nbsp;<span class="desc"># Este tutorial</span><br>
+                    │&nbsp;&nbsp; └── <span class="file">main.py</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="desc"># FastAPI entrypoint</span><br>
+                    ├── <span class="dir">specs/</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="desc"># Projetos gerados</span><br>
+                    ├── <span class="dir">dp_catalog/</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="desc"># DPs cadastrados (PDF/DOCX)</span><br>
+                    ├── <span class="file">requirements.txt</span><br>
+                    ├── <span class="file">.env</span><br>
+                    ├── <span class="file">.gitignore</span><br>
+                    ├── <span class="file">run.py</span><br>
+                    └── <span class="file">README.md</span>
+                </div>
+            </section>
+
+            <!-- ============================================================ -->
+            <!-- FASES DE USO -->
+            <!-- ============================================================ -->
+            <section>
+                <h2 class="text-xl font-bold text-accent mb-6 flex items-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+                    Guia de Uso &mdash; 5 Fases
+                </h2>
+
+                <!-- FASE 1 -->
+                <div id="fase1" class="mb-10">
+                    <div class="flex items-start gap-3 mb-3">
+                        <div class="step-number bg-accent text-white text-lg">1</div>
+                        <div>
+                            <h3 class="text-lg font-bold">Especificar (ESPEC.md)</h3>
+                            <p class="text-xs text-muted">Descreva O QUE voce quer construir e POR QUE.</p>
+                        </div>
+                    </div>
+                    <div class="bg-bg-card border border-border rounded-xl p-5 space-y-3">
+                        <p class="text-sm"><strong>Como usar:</strong></p>
+                        <ol class="text-sm text-muted space-y-2 list-decimal list-inside">
+                            <li>Clique em <span class="text-accent font-bold">Novo Projeto</span> ou selecione um existente</li>
+                            <li>Preencha o <strong>nome</strong> e a <strong>descricao</strong> do projeto</li>
+                            <li>Clique em <span class="text-accent font-bold">Criar e Especificar</span></li>
+                            <li>O agente gerara o <code class="bg-bg px-1 rounded">ESPEC.md</code> completo com: visao geral, personas, jornadas, requisitos funcionais e nao-funcionais, criterios de aceite e escopo</li>
+                        </ol>
+                        <div class="callout callout-info">
+                            <strong>Dica:</strong> Quanto mais detalhada sua descricao, melhor sera a especificacao gerada. Inclua o publico-alvo, problema a resolver e funcionalidades principais.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- FASE 2 -->
+                <div id="fase2" class="mb-10">
+                    <div class="flex items-start gap-3 mb-3">
+                        <div class="step-number bg-accent text-white text-lg">2</div>
+                        <div>
+                            <h3 class="text-lg font-bold">Design Pattern (DP.md)</h3>
+                            <p class="text-xs text-muted">Defina COMO sera construido e COM QUE tecnologias.</p>
+                        </div>
+                    </div>
+                    <div class="bg-bg-card border border-border rounded-xl p-5 space-y-3">
+                        <p class="text-sm"><strong>Como usar:</strong></p>
+                        <ol class="text-sm text-muted space-y-2 list-decimal list-inside">
+                            <li><strong>(Opcional)</strong> Selecione um <span class="text-accent">Design Pattern de referencia</span> no dropdown &mdash; estes sao DPs cadastrados previamente via upload de PDF/DOCX</li>
+                            <li>Preencha a <strong>stack desejada</strong> (ex: Python, FastAPI, React, PostgreSQL)</li>
+                            <li>Adicione <strong>restricoes tecnicas</strong> se houver (ex: "deve rodar em Docker", "sem banco relacional")</li>
+                            <li>Clique em <span class="text-accent font-bold">Gerar DP.md</span></li>
+                            <li>O agente gerara o plano tecnico com: arquitetura, stack, estrutura de diretorios, design patterns, modelagem de dados, APIs e estrategia de testes</li>
+                        </ol>
+                        <div class="callout callout-ok">
+                            <strong>Design Pattern de referencia:</strong> Se voce selecionou um DP previamente cadastrado, o agente usara aquele documento como base e adaptara ao seu projeto. Veja <a href="#dp-catalog" class="text-accent hover:underline">Catalogo de DPs</a> para saber como cadastrar.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- FASE 3 -->
+                <div id="fase3" class="mb-10">
+                    <div class="flex items-start gap-3 mb-3">
+                        <div class="step-number bg-accent text-white text-lg">3</div>
+                        <div>
+                            <h3 class="text-lg font-bold">Tarefas (TASKS.md)</h3>
+                            <p class="text-xs text-muted">Quebre a especificacao em tarefas independentes e testaveis.</p>
+                        </div>
+                    </div>
+                    <div class="bg-bg-card border border-border rounded-xl p-5 space-y-3">
+                        <p class="text-sm"><strong>Como usar:</strong></p>
+                        <ol class="text-sm text-muted space-y-2 list-decimal list-inside">
+                            <li>Com ESPEC.md e DP.md gerados, clique na fase <span class="text-accent font-bold">3. Tarefas</span></li>
+                            <li>Clique em <span class="text-accent font-bold">Gerar TASKS.md</span></li>
+                            <li>O agente analisa ambos artefatos e gera uma lista ordenada de tarefas, cada uma com: ID, titulo, descricao, dependencias, criterio de aceite e estimativa (P/M/G)</li>
+                        </ol>
+                    </div>
+                </div>
+
+                <!-- FASE 4 -->
+                <div id="fase4" class="mb-10">
+                    <div class="flex items-start gap-3 mb-3">
+                        <div class="step-number bg-accent text-white text-lg">4</div>
+                        <div>
+                            <h3 class="text-lg font-bold">Implementar</h3>
+                            <p class="text-xs text-muted">O agente gera o codigo seguindo todos os artefatos.</p>
+                        </div>
+                    </div>
+                    <div class="bg-bg-card border border-border rounded-xl p-5 space-y-3">
+                        <p class="text-sm"><strong>Como usar:</strong></p>
+                        <ol class="text-sm text-muted space-y-2 list-decimal list-inside">
+                            <li>Clique na fase <span class="text-accent font-bold">4. Implementar</span></li>
+                            <li><strong>(Opcional)</strong> Informe o <strong>numero da tarefa</strong> para implementar apenas uma tarefa especifica. Deixe vazio para implementar todas.</li>
+                            <li>Clique em <span class="text-accent font-bold">Implementar</span></li>
+                            <li>O agente gerara <code class="bg-bg px-1 rounded">IMPLEMENTATION.md</code> com blocos de codigo organizados por arquivo</li>
+                        </ol>
+                        <div class="callout callout-info">
+                            <strong>Dica:</strong> Para projetos grandes, implemente uma tarefa por vez para manter a qualidade e poder revisar cada entrega.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- FASE 5 -->
+                <div id="fase5" class="mb-10">
+                    <div class="flex items-start gap-3 mb-3">
+                        <div class="step-number bg-green-3 text-white text-lg">5</div>
+                        <div>
+                            <h3 class="text-lg font-bold">Download (.zip)</h3>
+                            <p class="text-xs text-muted">Baixe o projeto completo com todos os artefatos e codigo.</p>
+                        </div>
+                    </div>
+                    <div class="bg-bg-card border border-border rounded-xl p-5 space-y-3">
+                        <p class="text-sm"><strong>Como usar:</strong></p>
+                        <ol class="text-sm text-muted space-y-2 list-decimal list-inside">
+                            <li>Apos a fase 4, clique na fase <span class="text-green-4 font-bold">5. Download</span></li>
+                            <li>Verifique o checklist de artefatos disponiveis</li>
+                            <li>Clique em <span class="text-green-4 font-bold">Baixar {nome-do-projeto}.zip</span></li>
+                        </ol>
+                        <p class="text-sm mt-2"><strong>Estrutura do .zip:</strong></p>
+                        <div class="code-block file-tree text-xs">
+                            <span class="dir">nome-do-projeto/</span><br>
+                            ├── <span class="dir">docs/</span><br>
+                            │&nbsp;&nbsp; ├── <span class="file">ESPEC.md</span><br>
+                            │&nbsp;&nbsp; ├── <span class="file">DP.md</span><br>
+                            │&nbsp;&nbsp; ├── <span class="file">TASKS.md</span><br>
+                            │&nbsp;&nbsp; └── <span class="file">IMPLEMENTATION.md</span><br>
+                            ├── <span class="dir">src/</span>&nbsp;&nbsp;&nbsp;<span class="desc"># Codigo extraido dos blocos</span><br>
+                            │&nbsp;&nbsp; ├── <span class="file">app.py</span><br>
+                            │&nbsp;&nbsp; └── <span class="file">...</span><br>
+                            └── <span class="file">README.md</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ============================================================ -->
+            <!-- DP CATALOG -->
+            <!-- ============================================================ -->
+            <section id="dp-catalog">
+                <h2 class="text-xl font-bold text-accent mb-4 flex items-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
+                    Catalogo de Design Patterns (Upload PDF/DOCX)
+                </h2>
+                <p class="text-sm text-muted mb-4">
+                    O catalogo permite cadastrar design patterns que voce ja possui como documentos
+                    PDF ou DOCX. Eles ficam disponiveis para selecao na fase 2 de qualquer projeto.
+                </p>
+
+                <div class="bg-bg-card border border-border rounded-xl p-5 space-y-4">
+                    <h3 class="text-sm font-bold text-white">Como cadastrar um Design Pattern:</h3>
+                    <ol class="text-sm text-muted space-y-2 list-decimal list-inside">
+                        <li>Clique no botao <span class="text-accent font-bold">DP Catalog</span> no canto superior direito do header</li>
+                        <li>No modal, <strong>arraste</strong> um arquivo PDF ou DOCX para a area de upload, ou <strong>clique</strong> para selecionar</li>
+                        <li>De um <strong>nome</strong> para o design pattern (ex: "Clean Architecture", "Hexagonal Pattern")</li>
+                        <li>Clique em <span class="text-accent font-bold">Enviar</span></li>
+                        <li>O sistema extrai o texto do documento e o armazena no catalogo</li>
+                    </ol>
+
+                    <h3 class="text-sm font-bold text-white mt-4">Como usar um DP cadastrado:</h3>
+                    <ol class="text-sm text-muted space-y-2 list-decimal list-inside">
+                        <li>Na <strong>fase 2 (Design Pattern)</strong> de qualquer projeto, veja o dropdown <span class="text-accent">"Design Pattern de referencia"</span></li>
+                        <li>Selecione o DP desejado &mdash; um preview do conteudo aparecera abaixo</li>
+                        <li>Ao clicar em "Gerar DP.md", o agente usara aquele documento como base</li>
+                    </ol>
+
+                    <div class="callout callout-info">
+                        <strong>Formatos suportados:</strong> PDF (.pdf) e Word (.docx, .doc). Tamanho maximo: 20MB.<br>
+                        <strong>Gerenciamento:</strong> Voce pode remover DPs cadastrados clicando no icone de lixeira dentro do catalogo.
+                    </div>
+                </div>
+            </section>
+
+            <!-- ============================================================ -->
+            <!-- EDITAR ARTEFATOS -->
+            <!-- ============================================================ -->
+            <section id="editar">
+                <h2 class="text-xl font-bold text-accent mb-4 flex items-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                    Editar Artefatos
+                </h2>
+                <div class="bg-bg-card border border-border rounded-xl p-5 space-y-3">
+                    <p class="text-sm text-muted">
+                        Todos os artefatos gerados (ESPEC.md, DP.md, TASKS.md, IMPLEMENTATION.md) podem ser editados manualmente:
+                    </p>
+                    <ol class="text-sm text-muted space-y-2 list-decimal list-inside">
+                        <li>Navegue ate a fase do artefato que deseja editar</li>
+                        <li>Clique no icone de <strong>lapis</strong> (editar) no canto superior direito do painel de saida</li>
+                        <li>O painel muda para modo de edicao em texto puro (Markdown)</li>
+                        <li>Faca suas alteracoes e clique em <span class="text-green-4 font-bold">Salvar</span></li>
+                    </ol>
+                    <div class="flex items-center gap-4 text-xs text-muted mt-2">
+                        <span class="flex items-center gap-1">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                            Copiar conteudo
+                        </span>
+                        <span class="flex items-center gap-1">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                            Editar conteudo
+                        </span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ============================================================ -->
+            <!-- API REFERENCE -->
+            <!-- ============================================================ -->
+            <section id="api">
+                <h2 class="text-xl font-bold text-accent mb-4 flex items-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/></svg>
+                    Referencia da API
+                </h2>
+                <p class="text-sm text-muted mb-3">Todos os endpoints estao sob <code class="bg-bg-card px-1.5 py-0.5 rounded text-accent">/api</code>. A documentacao interativa esta em <a href="http://localhost:8000/docs" target="_blank" class="text-accent hover:underline">/docs</a> (Swagger UI).</p>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-xs border border-border rounded-lg overflow-hidden">
+                        <thead>
+                            <tr class="bg-bg-card text-left">
+                                <th class="px-3 py-2 border-b border-border text-accent">Metodo</th>
+                                <th class="px-3 py-2 border-b border-border text-accent">Rota</th>
+                                <th class="px-3 py-2 border-b border-border text-accent">Descricao</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr class="endpoint-row"><td class="px-3 py-2 border-b border-border"><span class="bg-green-1 text-green-4 px-1.5 py-0.5 rounded text-[10px] font-bold">GET</span></td><td class="px-3 py-2 border-b border-border font-mono">/api/projects</td><td class="px-3 py-2 border-b border-border text-muted">Lista todos os projetos</td></tr>
+                            <tr class="endpoint-row"><td class="px-3 py-2 border-b border-border"><span class="bg-green-1 text-green-4 px-1.5 py-0.5 rounded text-[10px] font-bold">GET</span></td><td class="px-3 py-2 border-b border-border font-mono">/api/projects/{name}</td><td class="px-3 py-2 border-b border-border text-muted">Status e artefatos de um projeto</td></tr>
+                            <tr class="endpoint-row"><td class="px-3 py-2 border-b border-border"><span class="bg-blue-900 text-blue-400 px-1.5 py-0.5 rounded text-[10px] font-bold">POST</span></td><td class="px-3 py-2 border-b border-border font-mono">/api/specify</td><td class="px-3 py-2 border-b border-border text-muted">Fase 1 &mdash; Gera ESPEC.md</td></tr>
+                            <tr class="endpoint-row"><td class="px-3 py-2 border-b border-border"><span class="bg-blue-900 text-blue-400 px-1.5 py-0.5 rounded text-[10px] font-bold">POST</span></td><td class="px-3 py-2 border-b border-border font-mono">/api/plan</td><td class="px-3 py-2 border-b border-border text-muted">Fase 2 &mdash; Gera DP.md (aceita dp_template_id)</td></tr>
+                            <tr class="endpoint-row"><td class="px-3 py-2 border-b border-border"><span class="bg-blue-900 text-blue-400 px-1.5 py-0.5 rounded text-[10px] font-bold">POST</span></td><td class="px-3 py-2 border-b border-border font-mono">/api/tasks</td><td class="px-3 py-2 border-b border-border text-muted">Fase 3 &mdash; Gera TASKS.md</td></tr>
+                            <tr class="endpoint-row"><td class="px-3 py-2 border-b border-border"><span class="bg-blue-900 text-blue-400 px-1.5 py-0.5 rounded text-[10px] font-bold">POST</span></td><td class="px-3 py-2 border-b border-border font-mono">/api/implement</td><td class="px-3 py-2 border-b border-border text-muted">Fase 4 &mdash; Gera IMPLEMENTATION.md</td></tr>
+                            <tr class="endpoint-row"><td class="px-3 py-2 border-b border-border"><span class="bg-yellow-900 text-yellow-300 px-1.5 py-0.5 rounded text-[10px] font-bold">PUT</span></td><td class="px-3 py-2 border-b border-border font-mono">/api/projects/{name}/{artifact}</td><td class="px-3 py-2 border-b border-border text-muted">Edita artefato manualmente</td></tr>
+                            <tr class="endpoint-row"><td class="px-3 py-2 border-b border-border"><span class="bg-green-1 text-green-4 px-1.5 py-0.5 rounded text-[10px] font-bold">GET</span></td><td class="px-3 py-2 border-b border-border font-mono">/api/projects/{name}/download</td><td class="px-3 py-2 border-b border-border text-muted">Fase 5 &mdash; Download .zip</td></tr>
+                            <tr class="endpoint-row"><td class="px-3 py-2 border-b border-border"><span class="bg-green-1 text-green-4 px-1.5 py-0.5 rounded text-[10px] font-bold">GET</span></td><td class="px-3 py-2 border-b border-border font-mono">/api/dp-catalog</td><td class="px-3 py-2 border-b border-border text-muted">Lista DPs cadastrados</td></tr>
+                            <tr class="endpoint-row"><td class="px-3 py-2 border-b border-border"><span class="bg-blue-900 text-blue-400 px-1.5 py-0.5 rounded text-[10px] font-bold">POST</span></td><td class="px-3 py-2 border-b border-border font-mono">/api/dp-catalog/upload</td><td class="px-3 py-2 border-b border-border text-muted">Upload PDF/DOCX como DP</td></tr>
+                            <tr class="endpoint-row"><td class="px-3 py-2 border-b border-border"><span class="bg-green-1 text-green-4 px-1.5 py-0.5 rounded text-[10px] font-bold">GET</span></td><td class="px-3 py-2 border-b border-border font-mono">/api/dp-catalog/{id}</td><td class="px-3 py-2 border-b border-border text-muted">Conteudo extraido de um DP</td></tr>
+                            <tr class="endpoint-row"><td class="px-3 py-2"><span class="bg-red-900 text-red-400 px-1.5 py-0.5 rounded text-[10px] font-bold">DEL</span></td><td class="px-3 py-2 font-mono">/api/dp-catalog/{id}</td><td class="px-3 py-2 text-muted">Remove um DP do catalogo</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- ============================================================ -->
+            <!-- TROUBLESHOOTING -->
+            <!-- ============================================================ -->
+            <section id="troubleshooting">
+                <h2 class="text-xl font-bold text-accent mb-4 flex items-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg>
+                    Troubleshooting
+                </h2>
+
+                <div class="space-y-4">
+                    <div class="bg-bg-card border border-border rounded-xl p-5">
+                        <p class="text-sm font-bold text-white mb-2">Erro: "OPENAI_API_KEY not set" ou respostas vazias</p>
+                        <p class="text-xs text-muted mb-2">A chave da API nao esta configurada ou e invalida.</p>
+                        <div class="code-block text-xs">
+                            <span class="lang-tag">fix</span>
+                            <span class="text-muted"># Verifique se o .env existe e contem a chave</span><br>
+                            cat .env<br><br>
+                            <span class="text-muted"># A chave deve comecar com "sk-"</span><br>
+                            OPENAI_API_KEY=sk-...
+                        </div>
+                    </div>
+
+                    <div class="bg-bg-card border border-border rounded-xl p-5">
+                        <p class="text-sm font-bold text-white mb-2">Erro: "ModuleNotFoundError: No module named 'xxx'"</p>
+                        <p class="text-xs text-muted mb-2">Dependencias nao instaladas ou ambiente virtual nao ativado.</p>
+                        <div class="code-block text-xs">
+                            <span class="lang-tag">fix</span>
+                            <span class="text-muted"># Ative o ambiente virtual</span><br>
+                            .venv\Scripts\activate&nbsp;&nbsp;<span class="text-muted"># Windows</span><br>
+                            source .venv/bin/activate&nbsp;&nbsp;<span class="text-muted"># Linux/Mac</span><br><br>
+                            <span class="text-muted"># Reinstale as dependencias</span><br>
+                            pip install -r requirements.txt
+                        </div>
+                    </div>
+
+                    <div class="bg-bg-card border border-border rounded-xl p-5">
+                        <p class="text-sm font-bold text-white mb-2">Erro: "Execute /specify antes de /plan"</p>
+                        <p class="text-xs text-muted mb-2">As fases sao sequenciais. Voce precisa completar a fase anterior antes de avancar.</p>
+                        <div class="callout callout-info text-xs">
+                            <strong>Ordem obrigatoria:</strong> Especificar &rarr; Design Pattern &rarr; Tarefas &rarr; Implementar &rarr; Download
+                        </div>
+                    </div>
+
+                    <div class="bg-bg-card border border-border rounded-xl p-5">
+                        <p class="text-sm font-bold text-white mb-2">Erro: Upload de PDF/DOCX falha</p>
+                        <p class="text-xs text-muted mb-2">Verifique o formato e tamanho do arquivo.</p>
+                        <div class="callout callout-warn text-xs">
+                            <strong>Formatos aceitos:</strong> .pdf, .docx, .doc<br>
+                            <strong>Tamanho maximo:</strong> 20MB<br>
+                            <strong>Nota:</strong> PDFs escaneados (imagens) podem nao ter texto extraivel. Use PDFs com texto selecionavel.
+                        </div>
+                    </div>
+
+                    <div class="bg-bg-card border border-border rounded-xl p-5">
+                        <p class="text-sm font-bold text-white mb-2">Porta 8000 ja em uso</p>
+                        <p class="text-xs text-muted mb-2">Outra aplicacao esta usando a porta.</p>
+                        <div class="code-block text-xs">
+                            <span class="lang-tag">fix</span>
+                            <span class="text-muted"># Altere a porta no .env</span><br>
+                            APP_PORT=8080<br><br>
+                            <span class="text-muted"># Ou encerre o processo na porta 8000</span><br>
+                            <span class="text-muted"># Windows:</span> netstat -ano | findstr :8000<br>
+                            <span class="text-muted"># Linux:</span>&nbsp; lsof -i :8000
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ============================================================ -->
+            <!-- FOOTER DO TUTORIAL -->
+            <!-- ============================================================ -->
+            <section class="border-t border-border pt-8 mt-12 text-center">
+                <p class="text-3xl mb-2" style="font-weight:790">
+                    <span class="text-muted">lemm</span><span class="text-accent">AI</span><span class="text-muted">ngs</span>
+                </p>
+                <p class="text-sm text-muted mb-4">Pronto para comecar?</p>
+                <a href="/" class="bg-accent hover:bg-red-500 text-white px-8 py-3 rounded-xl font-semibold transition text-sm inline-block">
+                    Abrir Aplicacao
+                </a>
+                <p class="text-xs text-muted mt-6">
+                    Spec-Driven Development, by Gaiotto |
+                    <a href="https://falagaiotto.com.br/" target="_blank" class="text-accent hover:underline">falagaiotto.com.br</a>
+                </p>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- Footer -->
+    <footer class="border-t border-border mt-8 py-4 px-4 md:px-8">
+        <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between text-xs text-muted gap-2">
+            <span>lemmAIngs &copy; 2026 - Spec-Driven Development, by Gaiotto</span>
+            <span>Powered by LangGraph + OpenAI | <a href="https://falagaiotto.com.br/" target="_blank" class="text-accent hover:underline">falagaiotto</a></span>
+        </div>
+    </footer>
+
+    <!-- Smooth scroll -->
+    <script>
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    history.pushState(null, null, this.getAttribute('href'));
+                }
+            });
+        });
+
+        // Highlight active TOC item on scroll
+        const sections = document.querySelectorAll('section[id]');
+        const tocLinks = document.querySelectorAll('.toc-link');
+        window.addEventListener('scroll', () => {
+            let current = '';
+            sections.forEach(section => {
+                const top = section.offsetTop - 100;
+                if (scrollY >= top) current = section.getAttribute('id');
+            });
+            tocLinks.forEach(link => {
+                link.classList.remove('text-accent');
+                link.classList.add('text-muted');
+                if (link.getAttribute('href') === '#' + current) {
+                    link.classList.add('text-accent');
+                    link.classList.remove('text-muted');
+                }
+            });
+        });
+    </script>
+</body>
+</html>

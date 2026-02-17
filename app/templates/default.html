@@ -1,0 +1,856 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>lemmAIngs - Spec-Driven Development</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        bg: { DEFAULT: '#0d1117', card: '#161b22', hover: '#1c2128' },
+                        accent: '#ff6347',
+                        muted: '#9595ad',
+                        green: { 1: '#0e4429', 2: '#006d32', 3: '#26a641', 4: '#39d353' },
+                        border: '#30363d',
+                    },
+                    fontFamily: {
+                        mono: ['"Courier New"', 'Courier', 'monospace'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style>
+        body { background: #0d1117; color: #c9d1d9; }
+        .phase-active { border-color: #ff6347 !important; background: #1c2128 !important; }
+        .phase-done { border-color: #39d353 !important; }
+        .phase-dot-active { background: #ff6347; }
+        .phase-dot-done { background: #39d353; }
+        .md-content h1 { font-size: 1.5rem; font-weight: 700; margin: 1rem 0 0.5rem; color: #ff6347; }
+        .md-content h2 { font-size: 1.25rem; font-weight: 600; margin: 1rem 0 0.5rem; color: #c9d1d9; }
+        .md-content h3 { font-size: 1.1rem; font-weight: 600; margin: 0.75rem 0 0.25rem; color: #9595ad; }
+        .md-content p { margin: 0.5rem 0; line-height: 1.6; }
+        .md-content ul, .md-content ol { padding-left: 1.5rem; margin: 0.5rem 0; }
+        .md-content li { margin: 0.25rem 0; }
+        .md-content table { width: 100%; border-collapse: collapse; margin: 0.75rem 0; }
+        .md-content th { background: #161b22; padding: 0.5rem; border: 1px solid #30363d; text-align: left; font-weight: 600; }
+        .md-content td { padding: 0.5rem; border: 1px solid #30363d; }
+        .md-content code { background: #161b22; padding: 0.15rem 0.4rem; border-radius: 4px; font-family: 'Courier New', monospace; font-size: 0.9em; }
+        .md-content pre { background: #161b22; padding: 1rem; border-radius: 8px; overflow-x: auto; margin: 0.75rem 0; }
+        .md-content pre code { background: none; padding: 0; }
+        .md-content blockquote { border-left: 3px solid #ff6347; padding-left: 1rem; margin: 0.75rem 0; color: #9595ad; }
+        .spinner { animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .contrib-cell { width: 10px; height: 10px; margin: 1px; border-radius: 2px; }
+        .drop-zone { border: 2px dashed #30363d; transition: all 0.2s; }
+        .drop-zone.dragover { border-color: #ff6347; background: rgba(255,99,71,0.05); }
+        .dp-card { transition: all 0.15s; }
+        .dp-card:hover { border-color: #ff6347; }
+        .dp-card.selected { border-color: #ff6347; background: #1c2128; }
+        @media (max-width: 768px) {
+            .phases-bar { flex-direction: column; gap: 0.5rem; }
+        }
+    </style>
+</head>
+<body class="min-h-screen font-mono">
+
+    <!-- Header -->
+    <header class="border-b border-border px-4 py-3 md:px-8">
+        <div class="max-w-7xl mx-auto flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <a href="/" class="text-2xl font-black tracking-tight" style="font-weight: 790;">
+                    <span class="text-muted">lemm</span><span class="text-accent">AI</span><span class="text-muted">ngs</span>
+                </a>
+                <span class="hidden sm:inline text-xs text-muted bg-bg-card px-2 py-0.5 rounded border border-border">
+                    spec-driven dev
+                </span>
+            </div>
+            <nav class="flex items-center gap-4 text-sm text-muted">
+                <button onclick="showDPCatalog()" class="hover:text-accent transition" title="Catalogo de Design Patterns">
+                    <svg class="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
+                    <span class="hidden sm:inline">DP Catalog</span>
+                </button>
+                <button onclick="showNewProject()" class="hover:text-accent transition">+ Novo Projeto</button>
+                <a href="https://falagaiotto.com.br/" target="_blank" class="hover:text-accent transition hidden sm:inline">falagaiotto</a>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 md:px-8 py-6">
+
+        <!-- Project Selector -->
+        <div id="project-selector" class="mb-6">
+            <div class="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
+                <select id="project-list" onchange="loadProject(this.value)"
+                    class="bg-bg-card border border-border rounded-lg px-4 py-2 text-sm focus:border-accent focus:outline-none w-full sm:w-auto">
+                    <option value="">Selecione um projeto...</option>
+                </select>
+                <button onclick="showNewProject()"
+                    class="bg-accent hover:bg-red-500 text-white px-4 py-2 rounded-lg text-sm font-semibold transition w-full sm:w-auto">
+                    Novo Projeto
+                </button>
+            </div>
+        </div>
+
+        <!-- DP Catalog Modal -->
+        <div id="dp-catalog-modal" class="hidden fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+            <div class="bg-bg-card border border-border rounded-xl p-6 w-full max-w-2xl max-h-[85vh] overflow-y-auto">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-lg font-bold text-accent">Catalogo de Design Patterns</h2>
+                    <button onclick="hideDPCatalog()" class="text-muted hover:text-white text-xl">&times;</button>
+                </div>
+                <p class="text-xs text-muted mb-4">Faca upload de PDFs ou DOCXs com design patterns para usar como referencia na fase 2.</p>
+
+                <!-- Upload zone -->
+                <div id="dp-drop-zone" class="drop-zone rounded-xl p-6 text-center mb-4 cursor-pointer"
+                     onclick="document.getElementById('dp-file-input').click()"
+                     ondragover="event.preventDefault(); this.classList.add('dragover')"
+                     ondragleave="this.classList.remove('dragover')"
+                     ondrop="handleDPDrop(event)">
+                    <svg class="w-8 h-8 mx-auto text-muted mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                    </svg>
+                    <p class="text-sm text-muted">Arraste um PDF ou DOCX aqui ou clique para selecionar</p>
+                    <input id="dp-file-input" type="file" accept=".pdf,.docx,.doc" class="hidden" onchange="handleDPFileSelect(event)">
+                </div>
+
+                <!-- Upload name input -->
+                <div id="dp-upload-form" class="hidden mb-4 space-y-2">
+                    <div class="flex items-center gap-2">
+                        <span id="dp-selected-file" class="text-xs text-accent"></span>
+                    </div>
+                    <input id="dp-upload-name" type="text" placeholder="Nome para este design pattern..."
+                        class="w-full bg-bg border border-border rounded-lg px-3 py-2 text-sm focus:border-accent focus:outline-none">
+                    <div class="flex gap-2">
+                        <button onclick="cancelDPUpload()" class="px-4 py-1.5 text-sm text-muted hover:text-white transition">Cancelar</button>
+                        <button onclick="submitDPUpload()" id="btn-dp-upload"
+                            class="bg-accent hover:bg-red-500 text-white px-4 py-1.5 rounded-lg text-sm font-semibold transition">
+                            Enviar
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Catalog list -->
+                <div id="dp-catalog-list" class="space-y-2">
+                    <p class="text-sm text-muted text-center py-4">Carregando...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- New Project Modal -->
+        <div id="new-project-modal" class="hidden fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+            <div class="bg-bg-card border border-border rounded-xl p-6 w-full max-w-lg">
+                <h2 class="text-lg font-bold text-accent mb-4">Novo Projeto</h2>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm text-muted mb-1">Nome do Projeto</label>
+                        <input id="new-project-name" type="text" placeholder="meu-projeto"
+                            class="w-full bg-bg border border-border rounded-lg px-4 py-2 text-sm focus:border-accent focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-sm text-muted mb-1">Descricao (o que e por que)</label>
+                        <textarea id="new-project-desc" rows="5" placeholder="Descreva o que voce quer construir e por que..."
+                            class="w-full bg-bg border border-border rounded-lg px-4 py-2 text-sm focus:border-accent focus:outline-none resize-none"></textarea>
+                    </div>
+                    <div class="flex gap-3 justify-end">
+                        <button onclick="hideNewProject()"
+                            class="px-4 py-2 text-sm text-muted hover:text-white transition">Cancelar</button>
+                        <button onclick="createProject()"
+                            class="bg-accent hover:bg-red-500 text-white px-6 py-2 rounded-lg text-sm font-semibold transition">
+                            Criar e Especificar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Phases Pipeline -->
+        <div id="phases-section" class="hidden">
+            <!-- Phase Progress Bar -->
+            <div class="phases-bar flex items-center gap-2 mb-6 overflow-x-auto pb-2">
+                <div id="phase-specify" onclick="setActivePhase('specify')"
+                    class="flex items-center gap-2 px-4 py-2 border border-border rounded-lg cursor-pointer hover:bg-bg-hover transition min-w-fit">
+                    <div id="dot-specify" class="w-3 h-3 rounded-full bg-border"></div>
+                    <span class="text-sm whitespace-nowrap">1. Especificar</span>
+                </div>
+                <svg class="w-4 h-4 text-border flex-shrink-0 hidden sm:block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                </svg>
+                <div id="phase-plan" onclick="setActivePhase('plan')"
+                    class="flex items-center gap-2 px-4 py-2 border border-border rounded-lg cursor-pointer hover:bg-bg-hover transition min-w-fit">
+                    <div id="dot-plan" class="w-3 h-3 rounded-full bg-border"></div>
+                    <span class="text-sm whitespace-nowrap">2. Design Pattern</span>
+                </div>
+                <svg class="w-4 h-4 text-border flex-shrink-0 hidden sm:block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                </svg>
+                <div id="phase-tasks" onclick="setActivePhase('tasks')"
+                    class="flex items-center gap-2 px-4 py-2 border border-border rounded-lg cursor-pointer hover:bg-bg-hover transition min-w-fit">
+                    <div id="dot-tasks" class="w-3 h-3 rounded-full bg-border"></div>
+                    <span class="text-sm whitespace-nowrap">3. Tarefas</span>
+                </div>
+                <svg class="w-4 h-4 text-border flex-shrink-0 hidden sm:block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                </svg>
+                <div id="phase-implement" onclick="setActivePhase('implement')"
+                    class="flex items-center gap-2 px-4 py-2 border border-border rounded-lg cursor-pointer hover:bg-bg-hover transition min-w-fit">
+                    <div id="dot-implement" class="w-3 h-3 rounded-full bg-border"></div>
+                    <span class="text-sm whitespace-nowrap">4. Implementar</span>
+                </div>
+                <svg class="w-4 h-4 text-border flex-shrink-0 hidden sm:block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                </svg>
+                <div id="phase-download" onclick="setActivePhase('download')"
+                    class="flex items-center gap-2 px-4 py-2 border border-border rounded-lg cursor-pointer hover:bg-bg-hover transition min-w-fit">
+                    <div id="dot-download" class="w-3 h-3 rounded-full bg-border"></div>
+                    <span class="text-sm whitespace-nowrap">5. Download</span>
+                </div>
+            </div>
+
+            <!-- Phase Panels -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Left: Action Panel -->
+                <div class="lg:col-span-1 space-y-4">
+
+                    <!-- Specify Panel -->
+                    <div id="panel-specify" class="hidden bg-bg-card border border-border rounded-xl p-5">
+                        <h3 class="text-accent font-bold mb-3">Especificar (ESPEC.md)</h3>
+                        <p class="text-xs text-muted mb-3">Descreva o que voce quer construir. O agente gerara uma especificacao completa.</p>
+                        <textarea id="input-specify" rows="6" placeholder="Descreva seu projeto em detalhes..."
+                            class="w-full bg-bg border border-border rounded-lg px-3 py-2 text-sm focus:border-accent focus:outline-none resize-none mb-3"></textarea>
+                        <button onclick="runSpecify()" id="btn-specify"
+                            class="w-full bg-accent hover:bg-red-500 text-white py-2 rounded-lg text-sm font-semibold transition">
+                            Gerar ESPEC.md
+                        </button>
+                    </div>
+
+                    <!-- Plan Panel (with DP selector) -->
+                    <div id="panel-plan" class="hidden bg-bg-card border border-border rounded-xl p-5">
+                        <h3 class="text-accent font-bold mb-3">Design Pattern (DP.md)</h3>
+                        <p class="text-xs text-muted mb-3">Escolha um DP de referencia ou gere do zero. O agente criara o plano tecnico.</p>
+
+                        <!-- DP Template Selector -->
+                        <div class="mb-3">
+                            <label class="block text-xs text-muted mb-1">Design Pattern de referencia (opcional)</label>
+                            <select id="dp-template-select"
+                                class="w-full bg-bg border border-border rounded-lg px-3 py-2 text-sm focus:border-accent focus:outline-none">
+                                <option value="">Nenhum - gerar do zero</option>
+                            </select>
+                            <div id="dp-preview-box" class="hidden mt-2 bg-bg border border-border rounded-lg p-3 text-xs text-muted max-h-24 overflow-y-auto"></div>
+                        </div>
+
+                        <div class="space-y-3">
+                            <input id="input-stack" type="text" placeholder="Stack: Python, FastAPI, React..."
+                                class="w-full bg-bg border border-border rounded-lg px-3 py-2 text-sm focus:border-accent focus:outline-none">
+                            <textarea id="input-constraints" rows="3" placeholder="Restricoes tecnicas (opcional)..."
+                                class="w-full bg-bg border border-border rounded-lg px-3 py-2 text-sm focus:border-accent focus:outline-none resize-none"></textarea>
+                            <button onclick="runPlan()" id="btn-plan"
+                                class="w-full bg-accent hover:bg-red-500 text-white py-2 rounded-lg text-sm font-semibold transition">
+                                Gerar DP.md
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Tasks Panel -->
+                    <div id="panel-tasks" class="hidden bg-bg-card border border-border rounded-xl p-5">
+                        <h3 class="text-accent font-bold mb-3">Tarefas (TASKS.md)</h3>
+                        <p class="text-xs text-muted mb-3">O agente quebrara a ESPEC + DP em tarefas independentes e testaveis.</p>
+                        <button onclick="runTasks()" id="btn-tasks"
+                            class="w-full bg-accent hover:bg-red-500 text-white py-2 rounded-lg text-sm font-semibold transition">
+                            Gerar TASKS.md
+                        </button>
+                    </div>
+
+                    <!-- Implement Panel -->
+                    <div id="panel-implement" class="hidden bg-bg-card border border-border rounded-xl p-5">
+                        <h3 class="text-accent font-bold mb-3">Implementar</h3>
+                        <p class="text-xs text-muted mb-3">O agente gerara o codigo seguindo a ESPEC, DP e TASKS.</p>
+                        <input id="input-task-index" type="number" placeholder="Numero da tarefa (vazio = todas)"
+                            class="w-full bg-bg border border-border rounded-lg px-3 py-2 text-sm focus:border-accent focus:outline-none mb-3">
+                        <button onclick="runImplement()" id="btn-implement"
+                            class="w-full bg-accent hover:bg-red-500 text-white py-2 rounded-lg text-sm font-semibold transition">
+                            Implementar
+                        </button>
+                    </div>
+
+                    <!-- Download Panel -->
+                    <div id="panel-download" class="hidden bg-bg-card border border-border rounded-xl p-5">
+                        <h3 class="text-accent font-bold mb-3">Download do Projeto</h3>
+                        <p class="text-xs text-muted mb-3">Baixe todos os artefatos e codigo gerado como um arquivo .zip.</p>
+                        <div id="download-summary" class="space-y-2 mb-4"></div>
+                        <button onclick="downloadProject()" id="btn-download"
+                            class="w-full bg-green-3 hover:bg-green-4 text-white py-3 rounded-lg text-sm font-bold transition flex items-center justify-center gap-2">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                            </svg>
+                            <span id="download-btn-text">Baixar projeto.zip</span>
+                        </button>
+                    </div>
+
+                    <!-- Contribution Grid -->
+                    <div class="bg-bg-card border border-border rounded-xl p-4">
+                        <p class="text-xs text-muted mb-2">Progresso do Projeto</p>
+                        <div class="flex flex-wrap" id="contrib-grid"></div>
+                    </div>
+                </div>
+
+                <!-- Right: Output Panel -->
+                <div class="lg:col-span-2">
+                    <div class="bg-bg-card border border-border rounded-xl overflow-hidden">
+                        <div class="flex items-center justify-between border-b border-border px-4 py-2">
+                            <div class="flex items-center gap-2">
+                                <div class="w-3 h-3 rounded-full bg-red-500"></div>
+                                <div class="w-3 h-3 rounded-full bg-yellow-500"></div>
+                                <div class="w-3 h-3 rounded-full bg-green-4"></div>
+                                <span id="output-title" class="text-xs text-muted ml-2">Saida</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <button onclick="copyOutput()" class="text-xs text-muted hover:text-accent transition" title="Copiar">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                                    </svg>
+                                </button>
+                                <button onclick="toggleEdit()" id="btn-edit" class="text-xs text-muted hover:text-accent transition" title="Editar">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                        <!-- Loading Spinner -->
+                        <div id="loading" class="hidden flex items-center justify-center py-20">
+                            <div class="flex flex-col items-center gap-3">
+                                <svg class="spinner w-8 h-8 text-accent" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                                </svg>
+                                <span id="loading-text" class="text-sm text-muted">Agente processando...</span>
+                            </div>
+                        </div>
+                        <!-- Markdown rendered output -->
+                        <div id="output-view" class="md-content p-5 overflow-auto max-h-[70vh] text-sm">
+                            <div class="text-center text-muted py-16">
+                                <p class="text-4xl mb-3" style="font-weight:790"><span class="text-muted">lemm</span><span class="text-accent">AI</span><span class="text-muted">ngs</span></p>
+                                <p class="text-sm">Selecione ou crie um projeto para comecar</p>
+                                <p class="text-xs mt-2 opacity-60">Spec-driven development com agentes de IA</p>
+                            </div>
+                        </div>
+                        <!-- Raw editor (hidden by default) -->
+                        <textarea id="output-editor" class="hidden w-full bg-bg p-5 text-sm font-mono focus:outline-none resize-none min-h-[70vh]"></textarea>
+                        <!-- Save bar -->
+                        <div id="save-bar" class="hidden border-t border-border px-4 py-2 flex justify-end gap-2">
+                            <button onclick="cancelEdit()" class="px-4 py-1.5 text-sm text-muted hover:text-white transition">Cancelar</button>
+                            <button onclick="saveEdit()" class="bg-green-3 hover:bg-green-4 text-white px-4 py-1.5 rounded text-sm font-semibold transition">Salvar</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Welcome (when no project loaded) -->
+        <div id="welcome" class="text-center py-20">
+            <p class="text-5xl mb-4" style="font-weight:790"><span class="text-muted">lemm</span><span class="text-accent">AI</span><span class="text-muted">ngs</span></p>
+            <p class="text-muted mb-6">Spec-Driven Development com agentes de IA</p>
+            <div class="max-w-3xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+                <div class="bg-bg-card border border-border rounded-xl p-4 text-left">
+                    <div class="text-accent font-bold text-sm mb-1">1. Especificar</div>
+                    <p class="text-xs text-muted">Descreva o que construir. O agente gera o ESPEC.md.</p>
+                </div>
+                <div class="bg-bg-card border border-border rounded-xl p-4 text-left">
+                    <div class="text-accent font-bold text-sm mb-1">2. Design Pattern</div>
+                    <p class="text-xs text-muted">Escolha um DP de referencia ou gere do zero.</p>
+                </div>
+                <div class="bg-bg-card border border-border rounded-xl p-4 text-left">
+                    <div class="text-accent font-bold text-sm mb-1">3. Tarefas</div>
+                    <p class="text-xs text-muted">O agente quebra tudo em tarefas independentes.</p>
+                </div>
+                <div class="bg-bg-card border border-border rounded-xl p-4 text-left">
+                    <div class="text-accent font-bold text-sm mb-1">4. Implementar</div>
+                    <p class="text-xs text-muted">O agente gera codigo seguindo os artefatos.</p>
+                </div>
+                <div class="bg-bg-card border border-border rounded-xl p-4 text-left">
+                    <div class="text-green-3 font-bold text-sm mb-1">5. Download</div>
+                    <p class="text-xs text-muted">Baixe o projeto completo como .zip.</p>
+                </div>
+                <div class="bg-bg-card border border-border rounded-xl p-4 text-left">
+                    <div class="text-yellow-500 font-bold text-sm mb-1">DP Catalog</div>
+                    <p class="text-xs text-muted">Upload de PDFs/DOCXs com design patterns.</p>
+                </div>
+            </div>
+            <button onclick="showNewProject()"
+                class="bg-accent hover:bg-red-500 text-white px-8 py-3 rounded-xl font-semibold transition text-sm">
+                Criar Primeiro Projeto
+            </button>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-border mt-12 py-4 px-4 md:px-8">
+        <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between text-xs text-muted gap-2">
+            <span>lemmAIngs &copy; 2026 - Spec-Driven Development, by Gaiotto</span>
+            <span>Powered by LangGraph + OpenAI | <a href="https://falagaiotto.com.br/" target="_blank" class="text-accent hover:underline">falagaiotto</a></span>
+        </div>
+    </footer>
+
+<script>
+    let currentProject = '';
+    let currentPhase = 'specify';
+    let isEditing = false;
+    let rawContent = '';
+    let pendingDPFile = null;
+    const allPhases = ['specify','plan','tasks','implement','download'];
+    const phaseArtifact = { specify: 'ESPEC.md', plan: 'DP.md', tasks: 'TASKS.md', implement: 'IMPLEMENTATION.md', download: '' };
+
+    // ── Init ──────────────────────────────────────────────────────────
+    loadProjects();
+
+    async function loadProjects() {
+        try {
+            const res = await fetch('/api/projects');
+            const projects = await res.json();
+            const sel = document.getElementById('project-list');
+            sel.innerHTML = '<option value="">Selecione um projeto...</option>';
+            projects.forEach(p => {
+                const opt = document.createElement('option');
+                opt.value = p; opt.textContent = p;
+                sel.appendChild(opt);
+            });
+        } catch(e) { console.error(e); }
+    }
+
+    async function loadProject(name) {
+        if (!name) { showWelcome(); return; }
+        currentProject = name;
+        try {
+            const res = await fetch(`/api/projects/${name}`);
+            const data = await res.json();
+            document.getElementById('welcome').classList.add('hidden');
+            document.getElementById('phases-section').classList.remove('hidden');
+            updatePhaseDots(data);
+            if (data.has_implementation) setActivePhase('download');
+            else if (data.has_tasks) setActivePhase('implement');
+            else if (data.has_dp) setActivePhase('tasks');
+            else if (data.has_espec) setActivePhase('plan');
+            else setActivePhase('specify');
+            buildContribGrid(data);
+        } catch(e) { console.error(e); }
+    }
+
+    function showWelcome() {
+        currentProject = '';
+        document.getElementById('welcome').classList.remove('hidden');
+        document.getElementById('phases-section').classList.add('hidden');
+    }
+
+    function updatePhaseDots(data) {
+        setDot('specify', data.has_espec);
+        setDot('plan', data.has_dp);
+        setDot('tasks', data.has_tasks);
+        setDot('implement', data.has_implementation);
+        setDot('download', data.has_implementation);
+    }
+
+    function setDot(phase, done) {
+        const dot = document.getElementById(`dot-${phase}`);
+        const el = document.getElementById(`phase-${phase}`);
+        if (!dot || !el) return;
+        dot.className = `w-3 h-3 rounded-full ${done ? 'phase-dot-done' : 'bg-border'}`;
+        el.className = el.className.replace(/phase-done/g, '').replace(/phase-active/g, '').trim();
+        if (done) el.classList.add('phase-done');
+    }
+
+    function setActivePhase(phase) {
+        currentPhase = phase;
+        allPhases.forEach(p => {
+            const panel = document.getElementById(`panel-${p}`);
+            if (panel) panel.classList.add('hidden');
+            const el = document.getElementById(`phase-${p}`);
+            if (el) el.classList.remove('phase-active');
+        });
+        const panel = document.getElementById(`panel-${phase}`);
+        if (panel) panel.classList.remove('hidden');
+        document.getElementById(`phase-${phase}`).classList.add('phase-active');
+
+        if (phase === 'plan') loadDPSelector();
+        if (phase === 'download') loadDownloadSummary();
+        if (phase !== 'download') loadArtifactContent(phase);
+    }
+
+    async function loadArtifactContent(phase) {
+        if (!currentProject) return;
+        try {
+            const res = await fetch(`/api/projects/${currentProject}`);
+            const data = await res.json();
+            const map = {
+                specify: data.espec_content,
+                plan: data.dp_content,
+                tasks: data.tasks_content,
+                implement: data.implementation_content,
+            };
+            const content = map[phase] || '';
+            rawContent = content;
+            if (content) {
+                document.getElementById('output-title').textContent = phaseArtifact[phase];
+                document.getElementById('output-view').innerHTML = marked.parse(content);
+                document.getElementById('output-view').classList.remove('hidden');
+            } else {
+                document.getElementById('output-title').textContent = 'Saida';
+                document.getElementById('output-view').innerHTML = `<p class="text-center text-muted py-16">Nenhum conteudo gerado para ${phaseArtifact[phase] || 'esta fase'}</p>`;
+            }
+        } catch(e) { console.error(e); }
+    }
+
+    // ── Download ──────────────────────────────────────────────────────
+    async function loadDownloadSummary() {
+        if (!currentProject) return;
+        try {
+            const res = await fetch(`/api/projects/${currentProject}`);
+            const data = await res.json();
+            const items = [
+                { ok: data.has_espec, name: 'ESPEC.md' },
+                { ok: data.has_dp, name: 'DP.md' },
+                { ok: data.has_tasks, name: 'TASKS.md' },
+                { ok: data.has_implementation, name: 'IMPLEMENTATION.md + codigo' },
+            ];
+
+            const html = items.map(i =>
+                `<div class="flex items-center gap-2 text-xs">` +
+                `<span class="${i.ok ? 'text-green-4' : 'text-red-400'}">${i.ok ? '&#10003;' : '&#10007;'}</span>` +
+                `<span>${i.name}</span></div>`
+            ).join('');
+            document.getElementById('download-summary').innerHTML = html;
+            document.getElementById('download-btn-text').textContent = `Baixar ${currentProject}.zip`;
+
+            const summaryMd = `# Download - ${currentProject}\n\n` +
+                items.map(i => `- ${i.ok ? '[x]' : '[ ]'} ${i.name}`).join('\n') +
+                '\n\nClique em **Baixar** para gerar o .zip com todos os artefatos e codigo.';
+            rawContent = summaryMd;
+            document.getElementById('output-title').textContent = `${currentProject}.zip`;
+            document.getElementById('output-view').innerHTML = marked.parse(summaryMd);
+        } catch(e) { console.error(e); }
+    }
+
+    function downloadProject() {
+        if (!currentProject) return;
+        window.location.href = `/api/projects/${currentProject}/download`;
+    }
+
+    // ── DP Catalog ────────────────────────────────────────────────────
+    function showDPCatalog() {
+        document.getElementById('dp-catalog-modal').classList.remove('hidden');
+        loadDPCatalog();
+    }
+
+    function hideDPCatalog() {
+        document.getElementById('dp-catalog-modal').classList.add('hidden');
+    }
+
+    async function loadDPCatalog() {
+        const list = document.getElementById('dp-catalog-list');
+        try {
+            const res = await fetch('/api/dp-catalog');
+            const templates = await res.json();
+            if (templates.length === 0) {
+                list.innerHTML = '<p class="text-sm text-muted text-center py-4">Nenhum design pattern cadastrado. Faca upload acima.</p>';
+                return;
+            }
+            list.innerHTML = templates.map(t => `
+                <div class="dp-card bg-bg border border-border rounded-lg p-3 flex items-start justify-between gap-3">
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center gap-2 mb-1">
+                            <span class="text-sm font-semibold text-accent">${escapeHtml(t.name)}</span>
+                            <span class="text-[10px] text-muted bg-bg-card px-1.5 py-0.5 rounded">${escapeHtml(t.filename)}</span>
+                        </div>
+                        <p class="text-xs text-muted truncate">${escapeHtml(t.preview.substring(0, 120))}</p>
+                    </div>
+                    <button onclick="deleteDPTemplate('${t.id}')" class="text-red-400 hover:text-red-300 flex-shrink-0 text-xs" title="Remover">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                    </button>
+                </div>
+            `).join('');
+        } catch(e) {
+            list.innerHTML = '<p class="text-sm text-red-400 text-center py-4">Erro ao carregar catalogo.</p>';
+        }
+    }
+
+    async function loadDPSelector() {
+        const sel = document.getElementById('dp-template-select');
+        try {
+            const res = await fetch('/api/dp-catalog');
+            const templates = await res.json();
+            sel.innerHTML = '<option value="">Nenhum - gerar do zero</option>';
+            templates.forEach(t => {
+                const opt = document.createElement('option');
+                opt.value = t.id;
+                opt.textContent = `${t.name} (${t.filename})`;
+                sel.appendChild(opt);
+            });
+            sel.onchange = async function() {
+                const box = document.getElementById('dp-preview-box');
+                if (this.value) {
+                    try {
+                        const r = await fetch(`/api/dp-catalog/${this.value}`);
+                        const data = await r.json();
+                        box.textContent = data.content.substring(0, 500) + (data.content.length > 500 ? '...' : '');
+                        box.classList.remove('hidden');
+                    } catch(e) { box.classList.add('hidden'); }
+                } else {
+                    box.classList.add('hidden');
+                }
+            };
+        } catch(e) { console.error(e); }
+    }
+
+    function handleDPDrop(event) {
+        event.preventDefault();
+        event.currentTarget.classList.remove('dragover');
+        const files = event.dataTransfer.files;
+        if (files.length > 0) prepareDPUpload(files[0]);
+    }
+
+    function handleDPFileSelect(event) {
+        const files = event.target.files;
+        if (files.length > 0) prepareDPUpload(files[0]);
+    }
+
+    function prepareDPUpload(file) {
+        const ext = file.name.split('.').pop().toLowerCase();
+        if (!['pdf', 'docx', 'doc'].includes(ext)) {
+            alert('Formato nao suportado. Use PDF ou DOCX.');
+            return;
+        }
+        pendingDPFile = file;
+        document.getElementById('dp-selected-file').textContent = file.name;
+        document.getElementById('dp-upload-name').value = file.name.replace(/\.\w+$/, '');
+        document.getElementById('dp-upload-form').classList.remove('hidden');
+    }
+
+    function cancelDPUpload() {
+        pendingDPFile = null;
+        document.getElementById('dp-upload-form').classList.add('hidden');
+        document.getElementById('dp-file-input').value = '';
+    }
+
+    async function submitDPUpload() {
+        if (!pendingDPFile) return;
+        const name = document.getElementById('dp-upload-name').value.trim() || pendingDPFile.name;
+        const btn = document.getElementById('btn-dp-upload');
+        btn.disabled = true; btn.textContent = 'Enviando...';
+
+        const form = new FormData();
+        form.append('file', pendingDPFile);
+        form.append('name', name);
+
+        try {
+            const res = await fetch('/api/dp-catalog/upload', { method: 'POST', body: form });
+            if (!res.ok) {
+                const err = await res.json();
+                throw new Error(err.detail || 'Erro no upload');
+            }
+            cancelDPUpload();
+            await loadDPCatalog();
+        } catch(e) {
+            alert(e.message);
+        } finally {
+            btn.disabled = false; btn.textContent = 'Enviar';
+        }
+    }
+
+    async function deleteDPTemplate(id) {
+        if (!confirm('Remover este design pattern do catalogo?')) return;
+        try {
+            await fetch(`/api/dp-catalog/${id}`, { method: 'DELETE' });
+            await loadDPCatalog();
+        } catch(e) { alert('Erro ao remover.'); }
+    }
+
+    // ── New Project ───────────────────────────────────────────────────
+    function showNewProject() {
+        document.getElementById('new-project-modal').classList.remove('hidden');
+        document.getElementById('new-project-name').focus();
+    }
+
+    function hideNewProject() {
+        document.getElementById('new-project-modal').classList.add('hidden');
+    }
+
+    async function createProject() {
+        const name = document.getElementById('new-project-name').value.trim();
+        const desc = document.getElementById('new-project-desc').value.trim();
+        if (!name || !desc) { alert('Preencha nome e descricao.'); return; }
+        hideNewProject();
+        currentProject = name;
+        document.getElementById('welcome').classList.add('hidden');
+        document.getElementById('phases-section').classList.remove('hidden');
+        setActivePhase('specify');
+        document.getElementById('input-specify').value = desc;
+        await loadProjects();
+        document.getElementById('project-list').value = name;
+        await runSpecify();
+    }
+
+    // ── API Calls ─────────────────────────────────────────────────────
+    async function apiCall(url, body) {
+        showLoading();
+        try {
+            const res = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body),
+            });
+            if (!res.ok) {
+                const err = await res.json();
+                throw new Error(err.detail || 'Erro na API');
+            }
+            return await res.json();
+        } finally {
+            hideLoading();
+        }
+    }
+
+    function showLoading(text) {
+        document.getElementById('loading').classList.remove('hidden');
+        document.getElementById('output-view').classList.add('hidden');
+        document.getElementById('loading-text').textContent = text || 'Agente processando...';
+    }
+
+    function hideLoading() {
+        document.getElementById('loading').classList.add('hidden');
+        document.getElementById('output-view').classList.remove('hidden');
+    }
+
+    function renderOutput(phase, content) {
+        rawContent = content;
+        document.getElementById('output-title').textContent = phaseArtifact[phase] || phase;
+        document.getElementById('output-view').innerHTML = marked.parse(content);
+    }
+
+    // ── Phase Runners ─────────────────────────────────────────────────
+    async function runSpecify() {
+        const desc = document.getElementById('input-specify').value.trim();
+        if (!desc) { alert('Descreva o projeto.'); return; }
+        try {
+            const data = await apiCall('/api/specify', { project_name: currentProject, description: desc });
+            renderOutput('specify', data.content);
+            setDot('specify', true);
+            await loadProjects();
+            document.getElementById('project-list').value = currentProject;
+            buildContribGrid({ has_espec: true, has_dp: false, has_tasks: false, has_implementation: false });
+        } catch(e) { alert(e.message); hideLoading(); }
+    }
+
+    async function runPlan() {
+        const stack = document.getElementById('input-stack').value.trim();
+        if (!stack) { alert('Defina a stack.'); return; }
+        const constraints = document.getElementById('input-constraints').value.trim();
+        const dpId = document.getElementById('dp-template-select').value || null;
+        try {
+            const data = await apiCall('/api/plan', {
+                project_name: currentProject, stack, constraints,
+                dp_template_id: dpId
+            });
+            renderOutput('plan', data.content);
+            setDot('plan', true);
+            buildContribGrid({ has_espec: true, has_dp: true, has_tasks: false, has_implementation: false });
+        } catch(e) { alert(e.message); hideLoading(); }
+    }
+
+    async function runTasks() {
+        try {
+            const data = await apiCall('/api/tasks', { project_name: currentProject });
+            renderOutput('tasks', data.content);
+            setDot('tasks', true);
+            buildContribGrid({ has_espec: true, has_dp: true, has_tasks: true, has_implementation: false });
+        } catch(e) { alert(e.message); hideLoading(); }
+    }
+
+    async function runImplement() {
+        const idx = document.getElementById('input-task-index').value;
+        const body = { project_name: currentProject };
+        if (idx) body.task_index = parseInt(idx);
+        try {
+            const data = await apiCall('/api/implement', body);
+            renderOutput('implement', data.content);
+            setDot('implement', true);
+            setDot('download', true);
+            buildContribGrid({ has_espec: true, has_dp: true, has_tasks: true, has_implementation: true });
+        } catch(e) { alert(e.message); hideLoading(); }
+    }
+
+    // ── Editor ────────────────────────────────────────────────────────
+    function copyOutput() {
+        navigator.clipboard.writeText(rawContent).then(() => {
+            const btn = document.querySelector('[onclick="copyOutput()"]');
+            btn.innerHTML = '<span class="text-green-4 text-xs">Copiado!</span>';
+            setTimeout(() => {
+                btn.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>';
+            }, 1500);
+        });
+    }
+
+    function toggleEdit() {
+        if (!rawContent || currentPhase === 'download') return;
+        isEditing = !isEditing;
+        if (isEditing) {
+            document.getElementById('output-view').classList.add('hidden');
+            document.getElementById('output-editor').classList.remove('hidden');
+            document.getElementById('output-editor').value = rawContent;
+            document.getElementById('save-bar').classList.remove('hidden');
+        } else { cancelEdit(); }
+    }
+
+    function cancelEdit() {
+        isEditing = false;
+        document.getElementById('output-view').classList.remove('hidden');
+        document.getElementById('output-editor').classList.add('hidden');
+        document.getElementById('save-bar').classList.add('hidden');
+    }
+
+    async function saveEdit() {
+        const content = document.getElementById('output-editor').value;
+        const artifact = phaseArtifact[currentPhase];
+        if (!artifact) return;
+        try {
+            await fetch(`/api/projects/${currentProject}/${artifact}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ content }),
+            });
+            rawContent = content;
+            document.getElementById('output-view').innerHTML = marked.parse(content);
+            cancelEdit();
+        } catch(e) { alert('Erro ao salvar: ' + e.message); }
+    }
+
+    // ── Contribution Grid ─────────────────────────────────────────────
+    function buildContribGrid(data) {
+        const grid = document.getElementById('contrib-grid');
+        grid.innerHTML = '';
+        const phases = [data.has_espec, data.has_dp, data.has_tasks, data.has_implementation, data.has_implementation];
+        const colors = ['#0e4429', '#006d32', '#26a641', '#39d353', '#39d353'];
+        for (let row = 0; row < 5; row++) {
+            for (let col = 0; col < 10; col++) {
+                const cell = document.createElement('div');
+                cell.className = 'contrib-cell';
+                cell.style.background = phases[row] ? colors[row] : '#161b22';
+                grid.appendChild(cell);
+            }
+        }
+    }
+    buildContribGrid({ has_espec: false, has_dp: false, has_tasks: false, has_implementation: false });
+
+    // ── Utils ─────────────────────────────────────────────────────────
+    function escapeHtml(str) {
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+    }
+</script>
+</body>
+</html>
